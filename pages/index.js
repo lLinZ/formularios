@@ -1,4 +1,5 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
+
 const classes = {
   container: {
     display: "flex",
@@ -33,8 +34,17 @@ const classes = {
     border: "1px solid rgba(220,220,220,0.1)",
     background: "rgba(220,220,220,0.3)",
     borderRadius: "15px",
-    padding: "5px",
+    padding: "10px",
     outline: "none",
+    margin: "5px auto",
+  },
+  select: {
+    border: "1px solid rgba(220,220,220,0.1)",
+    background: "rgba(220,220,220,0.3)",
+    borderRadius: "15px",
+    padding: "10px",
+    outline: "none",
+    margin: "5px auto",
   },
   label: {
     cursor: "pointer",
@@ -44,7 +54,7 @@ const classes = {
     background: "dodgerblue",
     color: "white",
     borderRadius: "5px",
-    padding: "5px",
+    padding: "10px",
     margin: "10px",
     width: "50%",
     cursor: "pointer",
@@ -60,123 +70,126 @@ const classes = {
   },
 };
 
-export const getServerSideProps = async (req, res) => {
-  const fields = "";
-  return {
-    props: {
-      fields: fields,
-    },
-  };
-};
+const Formulario = () => {
+  const [formulario, setFormulario] = useState(null);
 
-export default function Home() {
-  const [form, setForm] = useState([]);
-  const [singleField, setSingleField] = useState();
-
-  const generateForm = async (cant) => {
-    const headers = new Headers();
-    headers.append("Content-Type", "application/json");
-    const raw = JSON.stringify({ cant: cant });
-    const url = `http://${window.location.host}/api/generateForm`;
+  // Solicitud para generar el formulario
+  const handleButton = async (formid) => {
+    // Cabecera de la solicitud HTTP a la API
+    const headers = {
+      "Content-Type": "application/json",
+    };
+    // Cuerpo de la solicitud HTTP a la API
+    const bodyData = JSON.stringify({
+      formId: formid,
+    });
+    // URL de la API
+    const url = `${window.location.origin}/api/generate/form`;
+    console.log(url);
+    // Options de la solicitud
     const options = {
       method: "POST",
       headers: headers,
-      body: raw,
+      body: bodyData,
+      redirect: "follow",
     };
-    const response = await fetch(url, options);
-    const data = await response.json();
-    setForm(data);
-  };
-  const getFieldById = async (id) => {
-    const headers = new Headers();
-    headers.append("Content-Type", "application/json");
-    const raw = JSON.stringify({ id: id });
-    const url = `http://${window.location.host}/api/getField`;
-    const options = {
-      method: "POST",
-      headers: headers,
-      body: raw,
-    };
+    // Se ejecuta la solicitud
     try {
-      const response = await fetch(url, options);
-      try {
-        const data = await response.json();
-      } catch (err) {
-        console.error({ err });
+      const respuesta = await fetch(url, options);
+
+      // Si el status de la respuesta HTTP es 200, entonces se parsea
+      if (respuesta.status === 200) {
+        const datosFormulario = await respuesta.json();
+        // Se almacena en el state el formulario traido de la BD
+        setFormulario(datosFormulario);
       }
     } catch (err) {
-      console.error({ err });
+      // En caso de ocurrir un error, revisar consola
+      console.log({ err });
     }
-  };
-  const handleForm = (e) => {
-    e.preventDefault();
-
-    console.log(e.target[0]);
   };
   return (
     <div style={classes.container}>
       <div style={classes.formContainer}>
         <button
-          style={{ ...classes.button, ...classes.green }}
-          onClick={() => generateForm(1)}
+          style={{ ...classes.button, ...classes.blue }}
+          onClick={() => handleButton(1)}
         >
-          Generar formulario con 1 campo
-        </button>
-        <button
-          style={{ ...classes.button, ...classes.orange }}
-          onClick={() => generateForm(2)}
-        >
-          Generar formulario con 2 campos
+          Generar formulario 1
         </button>
         <button
           style={{ ...classes.button, ...classes.blue }}
-          onClick={() => generateForm(3)}
+          onClick={() => handleButton(2)}
         >
-          Generar formulario con 3 campos
+          Generar formulario 2
+        </button>
+        <button
+          style={{ ...classes.button, ...classes.blue }}
+          onClick={() => handleButton(3)}
+        >
+          Generar formulario 3
+        </button>
+        <button
+          style={{ ...classes.button, ...classes.blue }}
+          onClick={() => handleButton(4)}
+        >
+          Generar formulario 4
         </button>
       </div>
-      <form onSubmit={handleForm} style={classes.form}>
-        <h1>Formulario autogenerado</h1>
-        {form.length > 0 &&
-          form.map((campo) => (
-            <div
-              className="form-group"
-              key={campo.id}
-              style={classes.formGroup}
-            >
-              <label
-                className={campo.class_label}
-                htmlFor={campo.idcampo}
-                style={classes.label}
-              >
-                <b>{campo.label}</b>
-              </label>
+      {formulario && (
+        <form
+          key={`form-${formulario.form.id}`}
+          style={classes.form}
+          method={formulario.form.form_method}
+          action={formulario.form.form_action}
+          id={formulario.form.form_id}
+        >
+          {formulario.inputs &&
+            formulario.inputs.map((input) => (
               <input
-                id={campo.idcampo}
-                name={campo.name}
-                placeholder={campo.placeholder}
-                pattern={campo.pattern}
-                type={campo.type}
-                size={campo.size}
-                className={campo.classes}
-                maxLength={campo.maxlength}
-                title={campo.title}
+                key={`input-${input.id}`}
                 style={classes.input}
+                type={input.input_type}
+                name={input.input_name}
+                id={input.input_id}
+                placeholder={input.input_placeholder}
               />
-            </div>
-          ))}
-        <button type="submit" style={{ ...classes.button, ...classes.blue }}>
-          Enviar
-        </button>
-      </form>
-
-      <form>
-        <select>
-          <option></option>
-        </select>
-        <h1>Campo obtenido por ID:</h1>
-        {singleField}
-      </form>
+            ))}
+          {formulario.selects &&
+            formulario.selects.map((select) => (
+              <>
+                <select
+                  key={`select-${select.id}`}
+                  style={classes.select}
+                  name={select.select_name}
+                >
+                  {select.options.map((option) => (
+                    <option
+                      key={`option-${option.id}-${option.option_value}-${select.id}`}
+                      value={option.option_value}
+                    >
+                      {option.option_content}
+                    </option>
+                  ))}
+                </select>
+              </>
+            ))}
+          {formulario.buttons &&
+            formulario.buttons.map((button) => (
+              <button
+                key={`button-${button.id}`}
+                style={{ ...classes.button, ...classes.blue }}
+                type={button.button_type}
+                name={button.button_name}
+                id={button.button_id}
+              >
+                {button.button_content}
+              </button>
+            ))}
+        </form>
+      )}
     </div>
   );
-}
+};
+
+export default Formulario;
